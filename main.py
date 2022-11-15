@@ -28,31 +28,6 @@ def create_connection_in_memory():
             conn.close()
 
 
-create_projects_sql = """
--- projects table
-CREATE TABLE IF NOT EXISTS projects (
-  id integer PRIMARY KEY,
-  nazwa text NOT NULL,
-  start_date text,
-  end_date text
-);
-"""
-
-create_tasks_sql = """
--- zadanie table
-CREATE TABLE IF NOT EXISTS tasks (
-  id integer PRIMARY KEY,
-  project_id integer NOT NULL,
-  nazwa VARCHAR(250) NOT NULL,
-  opis TEXT,
-  status VARCHAR(15) NOT NULL,
-  start_date text NOT NULL,
-  end_date text NOT NULL,
-  FOREIGN KEY (project_id) REFERENCES projects (id)
-);
-"""
-
-
 def execute_sql(connect, sql):
     """ Execute sql
    :param connect: Connection object
@@ -64,36 +39,6 @@ def execute_sql(connect, sql):
         c.execute(sql)
     except Error as e:
         print(e)
-
-
-def add_task(conn_ta, task):
-    """
-    Create a new project into the projects table
-    :param conn_ta:
-    :param task:
-    :return: project id
-    """
-    sql = '''INSERT INTO tasks(project_id, nazwa, opis, status, start_date, end_date)
-             VALUES(?,?,?,?,?,?)'''
-    cur = conn_ta.cursor()
-    cur.execute(sql, task)
-    conn_ta.commit()
-    return cur.lastrowid
-
-
-def add_project(conn_pro, project):
-    """
-    Create a new task into the projects table
-    :param conn_pro:
-    :param project:
-    :return: task id
-    """
-    sql = '''INSERT INTO projects(nazwa, start_date, end_date)
-              VALUES(?,?,?)'''
-    cur = conn_pro.cursor()
-    cur.execute(sql, project)
-    conn_pro.commit()
-    return cur.lastrowid
 
 
 def select_task_by_status(conn, status):
@@ -204,25 +149,155 @@ def delete_all(conn, table):
     print("Deleted")
 
 
+create_football_team = """
+-- drużyny table
+CREATE TABLE IF NOT EXISTS teams (
+  id integer PRIMARY KEY,
+  nationality VARCHAR(250) NOT NULL,
+  team_group VARCHAR(250) NOT NULL
+);
+"""
+
+create_football_player = """
+-- zawodnicy table
+CREATE TABLE IF NOT EXISTS players (
+  id integer PRIMARY KEY,
+  team_id integer NOT NULL,
+  number integer NOT NULL,
+  name VARCHAR(250) NOT NULL,
+  surname VARCHAR(250) NOT NULL,
+  position VARCHAR(250) NOT NULL,
+  FOREIGN KEY (team_id) REFERENCES teams (id)
+);
+"""
+
+create_matches = """
+-- mecze table
+CREATE TABLE IF NOT EXISTS matches (
+  id integer PRIMARY KEY,
+  team_A_id integer NOT NULL,
+  team_B_id integer NOT NULL,
+  date text NOT NULL,
+  status VARCHAR(250) NOT NULL,
+  FOREIGN KEY (team_A_id) REFERENCES teams (id),
+  FOREIGN KEY (team_B_id) REFERENCES teams (id)
+);
+"""
+
+
+def add_player(conn_ta, player):
+    """
+    Create a new project into the projects table
+    :param conn_ta:
+    :param player:
+    :return: player id
+    """
+    sql = '''INSERT INTO players(team_id, number, name, surname, position)
+             VALUES(?,?,?,?,?)'''
+    cur = conn_ta.cursor()
+    cur.execute(sql, player)
+    conn_ta.commit()
+    return cur.lastrowid
+
+
+def add_team(conn_pro, team):
+    """
+    Create a new task into the projects table
+    :param conn_pro:
+    :param team:
+    :return: team id
+    """
+    sql = '''INSERT INTO teams(nationality, team_group)
+              VALUES(?,?)'''
+    cur = conn_pro.cursor()
+    cur.execute(sql, team)
+    conn_pro.commit()
+    return cur.lastrowid
+
+
+def add_match(conn_pro, match):
+    """
+    Create a new task into the projects table
+    :param conn_pro:
+    :param match:
+    :return: team id
+    """
+    sql = '''INSERT INTO matches(team_A_id, team_B_id, date, status)
+              VALUES(?,?,?,?)'''
+    cur = conn_pro.cursor()
+    cur.execute(sql, match)
+    conn_pro.commit()
+    return cur.lastrowid
+
+
 if __name__ == '__main__':
     conn = create_connection('database.db')
     if conn is not None:
-        execute_sql(conn, create_projects_sql)
-        execute_sql(conn, create_tasks_sql)
+        execute_sql(conn, create_football_team)
+        execute_sql(conn, create_football_player)
+        execute_sql(conn, create_matches)
         conn.close()
-    conn = create_connection('database.db')
-    if conn is not None:
-        pro = ("Powtórka z angielskiego", "2020-05-11 00:00:00", "2020-05-13 00:00:00")
-        pr_id = add_project(conn, pro)
 
-        ta = (pr_id, 'Słówka z ostatniej lekcji', 'Zasób słownictwa dotyczący zawodów', 'Todo', "2020-05-11 00:00:00",
-              "2020-05-13 00:00:00")
-        ts_id = add_task(conn, ta)
+    conn = create_connection('database.db')
+    team_id = []
+    players_id = []
+    matches_id = []
+    if conn is not None:
+        teams = [
+            ("POLSKA", "C"),
+            ("ARABIA SAUDYJSKA", "C"),
+            ("MEKSYK", "C"),
+            ("ARGENTYNA", "C")
+            ]
+        for t in teams:
+            t_id = add_team(conn, t)
+            team_id.append(t_id)
+
+        POSITION = ['Bramkarz', 'Obrońca', 'Pomocnik', 'Napastnik']
+
+        players = [
+            (team_id[0], 9, "Robert",  "Lewandowski", POSITION[3]),
+            (team_id[0], 12, "Arkadiusz", "Milik", POSITION[3]),
+            (team_id[0], 18, "Karol", "Świderski", POSITION[3]),
+            (team_id[0], 19, "Wojciech", "Szczęsny", POSITION[0]),
+            (team_id[0], 21, "Kamil", "Glik", POSITION[1]),
+            (team_id[0], 23, "Jan", "Bednarek", POSITION[1]),
+            (team_id[0], 8, "Jakub", "Kiwior", POSITION[1]),
+            (team_id[0], 10, "Robert", "Gumny", POSITION[1]),
+            (team_id[0], 11, "Grzegorz", "Krychowiak", POSITION[2]),
+            (team_id[0], 17, "Piotr", "Zieliński", POSITION[2]),
+            (team_id[0], 13, "Kamil", "Grosicki", POSITION[2]),
+            (team_id[1], 12, "Alexis", "Vega", POSITION[3]),
+            (team_id[1], 10, "Hirving", "Lozano", POSITION[3]),
+            (team_id[1], 1, "Raul", "Jimenez", POSITION[3]),
+            (team_id[1], 8, "Guillermo", "Ochoa", POSITION[0]),
+            (team_id[1], 24, "Jorge", "Sanchez", POSITION[1]),
+            (team_id[1], 5, "Kevin", "Alvarez", POSITION[1]),
+            (team_id[1], 13, "Nestor", "Araujo", POSITION[1]),
+            (team_id[1], 14, "Cesar", "Montez", POSITION[1]),
+            (team_id[1], 17, "Andres", "Guardado", POSITION[2]),
+            (team_id[1], 19, "Hector", "Herrera", POSITION[2]),
+            (team_id[1], 21, "Charly", "Rodriguez", POSITION[2]),
+        ]
+        for p in players:
+            p_id = add_player(conn, p)
+            players_id.append(p_id)
+
+        matches = [
+            (team_id[0], team_id[2], '22.11.2022, godz. 17:00', 'Odbyty'),
+            (team_id[0], team_id[1], '26.11.2022, godz. 14:00', 'Nieodbyty'),
+            (team_id[0], team_id[3], '30.11.2022, godz. 20:00', 'Nieodbyty'),
+        ]
+        for m in matches:
+            m_id = add_match(conn, m)
+            matches_id.append(m_id)
+
         conn = create_connection('database.db')
-        update(conn, "tasks", 2, status="started")
-        update(conn, "tasks", 2, stat="started")
-        delete_where(conn, "tasks", status="started")
-        print(pr_id, ts_id)
-        print(select_all(conn, "projects"))
-        print(select_where(conn, 'tasks', status='Todo'))
+        update(conn, "players", players_id[6], name="Artur", surname="Jędrzejczyk")
+        update(conn, "matches", matches_id[0], status="Nieodbyty")
+
+        delete_where(conn, "matches", status="Odbyty")
+
+        print(select_all(conn, "matches"))
+        print(select_where(conn, 'players', team_id=team_id[0]))
     create_connection_in_memory()
