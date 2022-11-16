@@ -149,42 +149,6 @@ def delete_all(conn, table):
     print("Deleted")
 
 
-create_football_team = """
--- drużyny table
-CREATE TABLE IF NOT EXISTS teams (
-  id integer PRIMARY KEY,
-  nationality VARCHAR(250) NOT NULL,
-  team_group VARCHAR(250) NOT NULL
-);
-"""
-
-create_football_player = """
--- zawodnicy table
-CREATE TABLE IF NOT EXISTS players (
-  id integer PRIMARY KEY,
-  team_id integer NOT NULL,
-  number integer NOT NULL,
-  name VARCHAR(250) NOT NULL,
-  surname VARCHAR(250) NOT NULL,
-  position VARCHAR(250) NOT NULL,
-  FOREIGN KEY (team_id) REFERENCES teams (id)
-);
-"""
-
-create_matches = """
--- mecze table
-CREATE TABLE IF NOT EXISTS matches (
-  id integer PRIMARY KEY,
-  team_A_id integer NOT NULL,
-  team_B_id integer NOT NULL,
-  date text NOT NULL,
-  status VARCHAR(250) NOT NULL,
-  FOREIGN KEY (team_A_id) REFERENCES teams (id),
-  FOREIGN KEY (team_B_id) REFERENCES teams (id)
-);
-"""
-
-
 def add_player(conn_ta, player):
     """
     Create a new project into the projects table
@@ -222,23 +186,82 @@ def add_match(conn_pro, match):
     :param match:
     :return: team id
     """
-    sql = '''INSERT INTO matches(team_A_id, team_B_id, date, status)
-              VALUES(?,?,?,?)'''
+    sql = '''INSERT INTO matches(team_A_id, team_B_id,versus, date, status)
+              VALUES(?,?,?,?,?)'''
     cur = conn_pro.cursor()
     cur.execute(sql, match)
     conn_pro.commit()
     return cur.lastrowid
 
 
+def add_unique(items, items_id, keyword):
+    j = 1
+    for i in items:
+        try:
+            if keyword == 'team':
+                data_type = [f'Drużyna {i[0]} dodana.', f'Dane dotyczące drużyny: {i[0]} istnieją.']
+                i_id = add_team(conn, i)
+            elif keyword == 'player':
+                data_type = [f'Zawodnik {i[2]} {i[3]} dodany.', f'Dane dotyczące zawodnika: {i[2]} {i[3]} istnieją.']
+                i_id = add_player(conn, i)
+            else:
+                data_type = [f'Mecz {i[2]} dodany.', f'Dane dotyczące meczu: {i[2]} istnieją.']
+                i_id = add_match(conn, i)
+            items_id.append(i_id)
+            print(data_type[0])
+        except sqlite3.IntegrityError:
+            items_id.append(j)
+            j += 1
+            print(data_type[1])
+
+
 if __name__ == '__main__':
+    create_football_team = """
+    -- drużyny table
+    CREATE TABLE IF NOT EXISTS teams (
+      id integer PRIMARY KEY,
+      nationality VARCHAR(250) NOT NULL,
+      team_group VARCHAR(250) NOT NULL,
+      UNIQUE(nationality)
+    );
+    """
+
+    create_football_player = """
+    -- zawodnicy table
+    CREATE TABLE IF NOT EXISTS players (
+      id integer PRIMARY KEY,
+      team_id integer NOT NULL,
+      number integer NOT NULL,
+      name VARCHAR(250) NOT NULL,
+      surname VARCHAR(250) NOT NULL,
+      position VARCHAR(250) NOT NULL,
+      FOREIGN KEY (team_id) REFERENCES teams (id),
+      UNIQUE(surname)
+    );
+    """
+
+    create_matches = """
+    -- mecze table
+    CREATE TABLE IF NOT EXISTS matches (
+      id integer PRIMARY KEY,
+      team_A_id integer NOT NULL,
+      team_B_id integer NOT NULL,
+      versus text NOT NULL,
+      date text NOT NULL,
+      status VARCHAR(250) NOT NULL,
+      FOREIGN KEY (team_A_id) REFERENCES teams (id),
+      FOREIGN KEY (team_B_id) REFERENCES teams (id),
+      UNIQUE(versus)
+    );
+    """
+
     conn = create_connection('database.db')
+
     if conn is not None:
         execute_sql(conn, create_football_team)
         execute_sql(conn, create_football_player)
         execute_sql(conn, create_matches)
-        conn.close()
 
-    conn = create_connection('database.db')
     team_id = []
     players_id = []
     matches_id = []
@@ -248,15 +271,13 @@ if __name__ == '__main__':
             ("ARABIA SAUDYJSKA", "C"),
             ("MEKSYK", "C"),
             ("ARGENTYNA", "C")
-            ]
-        for t in teams:
-            t_id = add_team(conn, t)
-            team_id.append(t_id)
+        ]
+        add_unique(teams, team_id, 'team')
 
         POSITION = ['Bramkarz', 'Obrońca', 'Pomocnik', 'Napastnik']
 
         players = [
-            (team_id[0], 9, "Robert",  "Lewandowski", POSITION[3]),
+            (team_id[0], 9, "Robert", "Lewandowski", POSITION[3]),
             (team_id[0], 12, "Arkadiusz", "Milik", POSITION[3]),
             (team_id[0], 18, "Karol", "Świderski", POSITION[3]),
             (team_id[0], 19, "Wojciech", "Szczęsny", POSITION[0]),
@@ -279,20 +300,15 @@ if __name__ == '__main__':
             (team_id[1], 19, "Hector", "Herrera", POSITION[2]),
             (team_id[1], 21, "Charly", "Rodriguez", POSITION[2]),
         ]
-        for p in players:
-            p_id = add_player(conn, p)
-            players_id.append(p_id)
+        add_unique(players, players_id, 'player')
 
         matches = [
-            (team_id[0], team_id[2], '22.11.2022, godz. 17:00', 'Odbyty'),
-            (team_id[0], team_id[1], '26.11.2022, godz. 14:00', 'Nieodbyty'),
-            (team_id[0], team_id[3], '30.11.2022, godz. 20:00', 'Nieodbyty'),
+            (team_id[0], team_id[2], f'{teams[0][0]} vs {teams[2][0]}', '22.11.2022, godz. 17:00', 'Odbyty'),
+            (team_id[0], team_id[1], f'{teams[0][0]} vs {teams[1][0]}', '26.11.2022, godz. 14:00', 'Nieodbyty'),
+            (team_id[0], team_id[3], f'{teams[0][0]} vs {teams[3][0]}', '30.11.2022, godz. 20:00', 'Nieodbyty'),
         ]
-        for m in matches:
-            m_id = add_match(conn, m)
-            matches_id.append(m_id)
+        add_unique(matches, matches_id, 'match')
 
-        conn = create_connection('database.db')
         update(conn, "players", players_id[6], name="Artur", surname="Jędrzejczyk")
         update(conn, "matches", matches_id[0], status="Nieodbyty")
 
@@ -300,4 +316,4 @@ if __name__ == '__main__':
 
         print(select_all(conn, "matches"))
         print(select_where(conn, 'players', team_id=team_id[0]))
-    create_connection_in_memory()
+        conn.close()
