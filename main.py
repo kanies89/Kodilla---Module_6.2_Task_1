@@ -251,7 +251,7 @@ if __name__ == '__main__':
       status VARCHAR(250) NOT NULL,
       FOREIGN KEY (team_A_id) REFERENCES teams (id),
       FOREIGN KEY (team_B_id) REFERENCES teams (id),
-      UNIQUE(versus)
+      UNIQUE(team_A_id, team_B_id)
     );
     """
 
