@@ -243,7 +243,7 @@ if __name__ == '__main__':
       surname VARCHAR(250) NOT NULL,
       position VARCHAR(250) NOT NULL,
       FOREIGN KEY (team_id) REFERENCES teams (id),
-      UNIQUE(surname)
+      UNIQUE(name, surname)
     );
     """
 
