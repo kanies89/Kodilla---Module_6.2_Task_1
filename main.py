@@ -316,7 +316,7 @@ if __name__ == '__main__':
         ]
         add_unique(matches, matches_id, 'match')
         update_unique(conn, "players", players_id[6], name="Artur", surname="Jędrzejczyk")
-        update_unique(conn, "matches",matches_id[0], status="Niedbyty")
+        update_unique(conn, "matches", matches_id[0], status="Niedbyty")
 
         delete_where(conn, "matches", status="Odbyty")
 
