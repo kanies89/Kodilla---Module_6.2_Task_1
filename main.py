@@ -194,6 +194,13 @@ def add_match(conn_pro, match):
     return cur.lastrowid
 
 
+def update_unique(connection, table, id, **kwargs):
+    try:
+        update(connection, table, id, **kwargs)
+    except sqlite3.IntegrityError:
+        print(f'Taki wpis do tabeli: {table} istnieje.')
+
+
 def add_unique(items, items_id, keyword):
     j = 1
     for i in items:
@@ -308,9 +315,8 @@ if __name__ == '__main__':
             (team_id[0], team_id[3], f'{teams[0][0]} vs {teams[3][0]}', '30.11.2022, godz. 20:00', 'Nieodbyty'),
         ]
         add_unique(matches, matches_id, 'match')
-
-        update(conn, "players", players_id[6], name="Artur", surname="Jędrzejczyk")
-        update(conn, "matches", matches_id[0], status="Nieodbyty")
+        update_unique(conn, "players", players_id[6], name="Artur", surname="Jędrzejczyk")
+        update_unique(conn, "matches",matches_id[0], status="Niedbyty")
 
         delete_where(conn, "matches", status="Odbyty")
 
